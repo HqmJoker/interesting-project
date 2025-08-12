@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>六边形弹跳小球模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: #121212;
+            color: #e0e0e0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+            background: linear-gradient(90deg, #1a1a2e, #16213e);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, #4cc9f0, #4361ee, #3a0ca3);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 10px rgba(76, 201, 240, 0.3);
+        }
+        
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.8;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: flex;
+            width: 100%;
+            max-width: 1400px;
+            padding: 20px;
+            gap: 20px;
+            flex: 1;
+        }
+        
+        .simulation-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        
+        canvas {
+            background: #0d0d0d;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.7);
+        }
+        
+        .controls {
+            width: 300px;
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(92, 92, 128, 0.3);
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        
+        h2 {
+            font-size: 1.4rem;
+            margin-bottom: 20px;
+            color: #4cc9f0;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(76, 201, 240, 0.3);
+        }
+        
+        h3 {
+            font-size: 1.1rem;
+            color: #f72585;
+        }
+        
+        .value-display {
+            font-weight: bold;
+            color: #4cc9f0;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: #2d2d44;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4361ee;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(67, 97, 238, 0.5);
+            transition: all 0.2s ease;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #4cc9f0;
+            transform: scale(1.2);
+        }
+        
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        button {
+            background: linear-gradient(45deg, #4361ee, #3a0ca3);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(67, 97, 238, 0.5);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        #resetBtn {
+            background: linear-gradient(45deg, #f72585, #b5179e);
+            box-shadow: 0 4px 15px rgba(247, 37, 133, 0.3);
+        }
+        
+        #resetBtn:hover {
+            box-shadow: 0 6px 20px rgba(247, 37, 133, 0.5);
+        }
+        
+        .instructions {
+            background: rgba(30, 30, 46, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+            max-width: 1400px;
+            width: calc(100% - 40px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(92, 92, 128, 0.3);
+        }
+        
+        .instructions h3 {
+            color: #4cc9f0;
+            margin-bottom: 10px;
+        }
+        
+        .instructions ul {
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        
+        .highlight {
+            color: #f72585;
+            font-weight: bold;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            width: 100%;
+            margin-top: auto;
+            color: #a0a0c0;
+            font-size: 0.9rem;
+        }
+        
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .controls {
+                width: 100%;
+                max-width: 500px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>六边形弹跳小球模拟器</h1>
+        <p class="subtitle">观察小球在旋转六边形边界内的物理运动，调整参数体验不同的物理效果</p>
+    </header>
+    
+    <div class="container">
+        <div class="simulation-container">
+            <canvas id="simulationCanvas" width="700" height="600"></canvas>
+        </div>
+        
+        <div class="controls">
+            <h2>模拟控制面板</h2>
+            
+            <div class="control-group">
+                <div class="control-header">
+                    <h3>小球大小</h3>
+                    <span class="value-display" id="ballSizeValue">15px</span>
+                </div>
+                <input type="range" id="ballSize" min="5" max="30" value="15" step="1">
+            </div>
+            
+            <div class="control-group">
+                <div class="control-header">
+                    <h3>重力</h3>
+                    <span class="value-display" id="gravityValue">0.5</span>
+                </div>
+                <input type="range" id="gravity" min="0" max="1" value="0.5" step="0.01">
+            </div>
+            
+            <div class="control-group">
+                <div class="control-header">
+                    <h3>弹性</h3>
+                    <span class="value-display" id="elasticityValue">0.9</span>
+                </div>
+                <input type="range" id="elasticity" min="0" max="1" value="0.9" step="0.01">
+            </div>
+            
+            <div class="control-group">
+                <div class="control-header">
+                    <h3>旋转速度</h3>
+                    <span class="value-display" id="rotationSpeedValue">1°/帧</span>
+                </div>
+                <input type="range" id="rotationSpeed" min="0" max="5" value="1" step="0.1">
+            </div>
+            
+            <div class="button-group">
+                <button id="resetBtn">重新开始</button>
+            </div>
+            
+            <div class="control-group">
+                <h3>小球颜色</h3>
+                <p>小球在碰撞时会动态变化颜色</p>
+                <div style="display: flex; justify-content: space-around; margin-top: 15px;">
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background: #f72585;"></div>
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background: #4cc9f0;"></div>
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background: #4361ee;"></div>
+                    <div style="width: 30px; height: 30px; border-radius: 50%; background: #7209b7;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="instructions">
+        <h3>使用说明</h3>
+        <ul>
+            <li>调整 <span class="highlight">小球大小</span> 滑块改变小球的半径</li>
+            <li>增加 <span class="highlight">重力</span> 值使小球下落更快</li>
+            <li><span class="highlight">弹性</span> 控制小球碰撞后的速度保留比例</li>
+            <li>调节 <span class="highlight">旋转速度</span> 改变六边形边界的旋转快慢</li>
+            <li>点击 <span class="highlight">重新开始</span> 按钮将小球重置到初始位置</li>
+            <li>小球在碰撞时会动态改变颜色，营造更生动的视觉效果</li>
+            <li>小球移动时会留下微妙的轨迹，增强视觉体验</li>
+        </ul>
+    </div>
+    
+    <footer>
+        <p>六边形弹跳小球模拟器 | 基于物理引擎的实时模拟 | 使用HTML5 Canvas技术</p>
+    </footer>
+
+    <script>
+        // 获取Canvas元素和上下文
+        const canvas = document.getElementById('simulationCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // 获取控制元素
+        const ballSizeSlider = document.getElementById('ballSize');
+        const gravitySlider = document.getElementById('gravity');
+        const elasticitySlider = document.getElementById('elasticity');
+        const rotationSpeedSlider = document.getElementById('rotationSpeed');
+        const resetBtn = document.getElementById('resetBtn');
+        
+        const ballSizeValue = document.getElementById('ballSizeValue');
+        const gravityValue = document.getElementById('gravityValue');
+        const elasticityValue = document.getElementById('elasticityValue');
+        const rotationSpeedValue = document.getElementById('rotationSpeedValue');
+        
+        // 初始化参数
+        let ballSize = parseInt(ballSizeSlider.value);
+        let gravity = parseFloat(gravitySlider.value);
+        let elasticity = parseFloat(elasticitySlider.value);
+        let rotationSpeed = parseFloat(rotationSpeedSlider.value);
+        
+        // 更新显示值
+        ballSizeValue.textContent = `${ballSize}px`;
+        gravityValue.textContent = gravity.toFixed(2);
+        elasticityValue.textContent = elasticity.toFixed(2);
+        rotationSpeedValue.textContent = `${rotationSpeed}°/帧`;
+        
+        // 添加事件监听器
+        ballSizeSlider.addEventListener('input', () => {
+            ballSize = parseInt(ballSizeSlider.value);
+            ballSizeValue.textContent = `${ballSize}px`;
+        });
+        
+        gravitySlider.addEventListener('input', () => {
+            gravity = parseFloat(gravitySlider.value);
+            gravityValue.textContent = gravity.toFixed(2);
+        });
+        
+        elasticitySlider.addEventListener('input', () => {
+            elasticity = parseFloat(elasticitySlider.value);
+            elasticityValue.textContent = elasticity.toFixed(2);
+        });
+        
+        rotationSpeedSlider.addEventListener('input', () => {
+            rotationSpeed = parseFloat(rotationSpeedSlider.value);
+            rotationSpeedValue.textContent = `${rotationSpeed}°/帧`;
+        });
+        
+        // 六边形参数
+        const hexCenterX = canvas.width / 2;
+        const hexCenterY = canvas.height / 2;
+        const hexRadius = 200;
+        let hexRotation = 0;
+        
+        // 小球参数
+        let ball = {
+            x: hexCenterX,
+            y: hexCenterY - 100,
+            vx: 3,
+            vy: 0,
+            radius: ballSize,
+            color: '#f72585',
+            trail: []
+        };
+        
+        // 保存初始状态
+        const initialBallState = {
+            x: hexCenterX,
+            y: hexCenterY - 100,
+            vx: 3,
+            vy: 0,
+            radius: ballSize,
+            color: '#f72585',
+            trail: []
+        };
+        
+        // 颜色数组用于碰撞时的颜色变化
+        const colors = ['#f72585', '#4cc9f0', '#4361ee', '#7209b7'];
+        let colorIndex = 0;
+        
+        // 重新开始函数
+        function resetSimulation() {
+            // 重置小球状态，但保留当前参数
+            ball.x = initialBallState.x;
+            ball.y = initialBallState.y;
+            ball.vx = initialBallState.vx;
+            ball.vy = initialBallState.vy;
+            ball.radius = ballSize;
+            ball.color = initialBallState.color;
+            ball.trail = [];
+            
+            // 重置颜色索引
+            colorIndex = 0;
+            
+            // 重置六边形旋转
+            hexRotation = 0;
+        }
+        
+        // 添加重新开始按钮事件监听器
+        resetBtn.addEventListener('click', resetSimulation);
+        
+        // 绘制六边形函数
+        function drawHexagon() {
+            ctx.beginPath();
+            
+            for (let i = 0; i < 6; i++) {
+                const angle = hexRotation + i * Math.PI / 3;
+                const x = hexCenterX + hexRadius * Math.cos(angle);
+                const y = hexCenterY + hexRadius * Math.sin(angle);
+                
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            }
+            
+            ctx.closePath();
+            
+            // 创建发光效果
+            ctx.shadowColor = '#4361ee';
+            ctx.shadowBlur = 20;
+            ctx.strokeStyle = '#4cc9f0';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+            
+            // 重置阴影
+            ctx.shadowBlur = 0;
+        }
+        
+        // 获取六边形的顶点
+        function getHexagonVertices() {
+            const vertices = [];
+            for (let i = 0; i < 6; i++) {
+                const angle = hexRotation + i * Math.PI / 3;
+                vertices.push({
+                    x: hexCenterX + hexRadius * Math.cos(angle),
+                    y: hexCenterY + hexRadius * Math.sin(angle)
+                });
+            }
+            return vertices;
+        }
+        
+        // 检查点是否在六边形内
+        function isPointInHexagon(x, y) {
+            const vertices = getHexagonVertices();
+            
+            // 使用射线投射算法
+            let inside = false;
+            for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
+                const xi = vertices[i].x;
+                const yi = vertices[i].y;
+                const xj = vertices[j].x;
+                const yj = vertices[j].y;
+                
+                const intersect = ((yi > y) !== (yj > y)) && 
+                    (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+                    
+                if (intersect) inside = !inside;
+            }
+            
+            return inside;
+        }
+        
+        // 计算点到线段的距离和最近点
+        function pointToLineDistance(px, py, x1, y1, x2, y2) {
+            const A = px - x1;
+            const B = py - y1;
+            const C = x2 - x1;
+            const D = y2 - y1;
+            
+            const dot = A * C + B * D;
+            const lenSq = C * C + D * D;
+            let param = -1;
+            
+            if (lenSq !== 0) {
+                param = dot / lenSq;
+            }
+            
+            let xx, yy;
+            
+            if (param < 0) {
+                xx = x1;
+                yy = y1;
+            } else if (param > 1) {
+                xx = x2;
+                yy = y2;
+            } else {
+                xx = x1 + param * C;
+                yy = y1 + param * D;
+            }
+            
+            const dx = px - xx;
+            const dy = py - yy;
+            return {
+                distance: Math.sqrt(dx * dx + dy * dy),
+                closestX: xx,
+                closestY: yy
+            };
+        }
+        
+        // 处理碰撞
+        function handleCollision() {
+            const vertices = getHexagonVertices();
+            
+            // 检查与每条边的碰撞
+            for (let i = 0; i < 6; i++) {
+                const j = (i + 1) % 6;
+                const x1 = vertices[i].x;
+                const y1 = vertices[i].y;
+                const x2 = vertices[j].x;
+                const y2 = vertices[j].y;
+                
+                const result = pointToLineDistance(ball.x, ball.y, x1, y1, x2, y2);
+                
+                if (result.distance < ball.radius) {
+                    // 计算法向量
+                    const nx = (ball.x - result.closestX) / result.distance;
+                    const ny = (ball.y - result.closestY) / result.distance;
+                    
+                    // 将球移出边界
+                    ball.x = result.closestX + nx * ball.radius;
+                    ball.y = result.closestY + ny * ball.radius;
+                    
+                    // 计算速度在法向量上的投影
+                    const dotProduct = ball.vx * nx + ball.vy * ny;
+                    
+                    // 反射速度
+                    ball.vx = ball.vx - 2 * dotProduct * nx;
+                    ball.vy = ball.vy - 2 * dotProduct * ny;
+                    
+                    // 应用弹性系数
+                    ball.vx *= elasticity;
+                    ball.vy *= elasticity;
+                    
+                    // 改变颜色
+                    colorIndex = (colorIndex + 1) % colors.length;
+                    ball.color = colors[colorIndex];
+                    
+                    break;
+                }
+            }
+        }
+        
+        // 更新小球位置
+        function updateBall() {
+            // 应用重力
+            ball.vy += gravity;
+            
+            // 更新位置
+            ball.x += ball.vx;
+            ball.y += ball.vy;
+            
+            // 处理碰撞
+            handleCollision();
+            
+            // 添加轨迹点
+            ball.trail.push({x: ball.x, y: ball.y});
+            if (ball.trail.length > 20) {
+                ball.trail.shift();
+            }
+        }
+        
+        // 绘制小球
+        function drawBall() {
+            // 绘制轨迹
+            for (let i = 0; i < ball.trail.length; i++) {
+                const point = ball.trail[i];
+                const alpha = i / ball.trail.length * 0.5;
+                
+                ctx.beginPath();
+                ctx.arc(point.x, point.y, ball.radius * 0.5, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(76, 201, 240, ${alpha * 0.3})`;
+                ctx.fill();
+            }
+            
+            // 绘制小球
+            ctx.beginPath();
+            ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+            
+            // 创建发光效果
+            ctx.shadowColor = ball.color;
+            ctx.shadowBlur = 15;
+            ctx.fillStyle = ball.color;
+            ctx.fill();
+            
+            // 重置阴影
+            ctx.shadowBlur = 0;
+        }
+        
+        // 主动画循环
+        function animate() {
+            // 清除画布
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // 更新六边形旋转
+            hexRotation += rotationSpeed * Math.PI / 180;
+            
+            // 更新小球
+            updateBall();
+            
+            // 绘制六边形
+            drawHexagon();
+            
+            // 绘制小球
+            drawBall();
+            
+            // 继续动画循环
+            requestAnimationFrame(animate);
+        }
+        
+        // 启动动画
+        animate();
+    </script>
+</body>
+</html>
