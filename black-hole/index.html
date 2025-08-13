@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>粒子漩涡模拟器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #000;
+            overflow: hidden;
+            font-family: 'Microsoft YaHei', '微软雅黑', sans-serif;
+            height: 100vh;
+            width: 100vw;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .title {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: rgba(100, 200, 255, 0.9);
+            font-size: 28px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 15px rgba(100, 200, 255, 0.8);
+            z-index: 10;
+        }
+        
+        .instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: rgba(200, 200, 200, 0.8);
+            font-size: 16px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px 15px;
+            border-radius: 5px;
+            max-width: 400px;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+        }
+        
+        .reset-btn {
+            background: rgba(0, 0, 0, 0.7);
+            color: rgba(100, 200, 255, 0.9);
+            border: 1px solid rgba(100, 200, 255, 0.5);
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+        
+        .reset-btn:hover {
+            background: rgba(100, 200, 255, 0.2);
+            box-shadow: 0 0 15px rgba(100, 200, 255, 0.5);
+        }
+        
+        .vortex-effect {
+            position: absolute;
+            border-radius: 50%;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            background: radial-gradient(circle, 
+                rgba(0, 0, 0, 0.9) 0%, 
+                rgba(0, 0, 0, 0.7) 30%, 
+                rgba(0, 0, 0, 0.3) 60%, 
+                rgba(0, 0, 0, 0) 100%);
+            box-shadow: 
+                0 0 30px rgba(100, 200, 255, 0.8),
+                inset 0 0 20px rgba(0, 100, 255, 0.5);
+            border: 2px solid rgba(100, 200, 255, 0.7);
+            animation: pulse 2s infinite alternate;
+        }
+        
+        @keyframes pulse {
+            0% { transform: translate(-50%, -50%) scale(1); }
+            100% { transform: translate(-50%, -50%) scale(1.1); }
+        }
+        
+        .vortex-effect::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 60%;
+            height: 60%;
+            border-radius: 50%;
+            background: radial-gradient(circle, 
+                rgba(100, 200, 255, 0.8) 0%, 
+                rgba(0, 100, 255, 0.4) 70%, 
+                rgba(0, 0, 0, 0) 100%);
+            transform: translate(-50%, -50%);
+            animation: rotate 4s linear infinite;
+        }
+        
+        @keyframes rotate {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        
+        .status {
+            position: absolute;
+            top: 70px;
+            left: 20px;
+            color: rgba(100, 255, 200, 0.9);
+            font-size: 14px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+        
+        .performance-info {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(200, 200, 200, 0.6);
+            font-size: 12px;
+            z-index: 10;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 5px 10px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="title">粒子漩涡模拟器</div>
+    <div class="status" id="status">状态: 自由状态</div>
+    <div class="instructions">点击并按住鼠标创建黑洞 - 松开鼠标释放粒子</div>
+    <div class="controls">
+        <button class="reset-btn" id="resetBtn">重置粒子</button>
+    </div>
+    <div class="performance-info" id="perfInfo">粒子数量: 800</div>
+    <canvas id="canvas"></canvas>
+
+    <script>
+        // 获取canvas元素和上下文
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusElement = document.getElementById('status');
+        const resetBtn = document.getElementById('resetBtn');
+        const perfInfo = document.getElementById('perfInfo');
+        
+        // 设置canvas尺寸
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        
+        // 粒子系统参数
+        const PARTICLE_COUNT = 800; // 降低粒子数量以提高性能
+        const PARTICLE_COLORS = [
+            [255, 255, 255], // 白色
+            [100, 200, 255], // 青色
+            [255, 100, 200], // 洋红色
+            [100, 255, 200], // 浅蓝色
+            [200, 100, 255]  // 紫色
+        ];
+        
+        // 粒子类
+        class Particle {
+            constructor() {
+                this.reset();
+                this.trail = [];
+                this.maxTrailLength = 4; // 减少轨迹点数量
+            }
+            
+            reset() {
+                this.x = Math.random() * canvas.width;
+                this.y = Math.random() * canvas.height;
+                this.size = Math.random() * 2 + 0.5;
+                this.speed = Math.random() * 0.5 + 0.1;
+                this.angle = Math.random() * Math.PI * 2;
+                this.vx = Math.cos(this.angle) * this.speed;
+                this.vy = Math.sin(this.angle) * this.speed;
+                this.color = PARTICLE_COLORS[Math.floor(Math.random() * PARTICLE_COLORS.length)];
+                this.alpha = Math.random() * 0.5 + 0.3;
+                this.trail = [];
+            }
+            
+            update() {
+                // 更新位置
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // 添加当前位置到轨迹（优化：只在必要时添加）
+                if (this.trail.length === 0 || 
+                    Math.abs(this.x - this.trail[this.trail.length - 1].x) > 1 ||
+                    Math.abs(this.y - this.trail[this.trail.length - 1].y) > 1) {
+                    this.trail.push({x: this.x, y: this.y});
+                    if (this.trail.length > this.maxTrailLength) {
+                        this.trail.shift();
+                    }
+                }
+                
+                // 边界处理 - 粒子从另一边出现
+                if (this.x < 0) this.x = canvas.width;
+                if (this.x > canvas.width) this.x = 0;
+                if (this.y < 0) this.y = canvas.height;
+                if (this.y > canvas.height) this.y = 0;
+            }
+            
+            draw() {
+                // 绘制轨迹
+                for (let i = 0; i < this.trail.length; i++) {
+                    const point = this.trail[i];
+                    const trailAlpha = this.alpha * (i / this.trail.length) * 0.5;
+                    
+                    ctx.beginPath();
+                    ctx.arc(point.x, point.y, this.size * (i / this.trail.length), 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${trailAlpha})`;
+                    ctx.fill();
+                }
+                
+                // 绘制粒子本身
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                
+                // 创建发光效果（优化：简化渐变）
+                const gradient = ctx.createRadialGradient(
+                    this.x, this.y, 0,
+                    this.x, this.y, this.size * 2
+                );
+                gradient.addColorStop(0, `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, ${this.alpha})`);
+                gradient.addColorStop(1, `rgba(${this.color[0]}, ${this.color[1]}, ${this.color[2]}, 0)`);
+                
+                ctx.fillStyle = gradient;
+                ctx.fill();
+            }
+        }
+        
+        // 创建粒子数组
+        const particles = [];
+        for (let i = 0; i < PARTICLE_COUNT; i++) {
+            particles.push(new Particle());
+        }
+        
+        // 更新性能信息显示
+        perfInfo.textContent = `粒子数量: ${PARTICLE_COUNT}`;
+        
+        // 黑洞相关变量
+        let isBlackHoleActive = false;
+        let blackHoleX = 0;
+        let blackHoleY = 0;
+        let blackHoleStrength = 0;
+        const BLACK_HOLE_MAX_STRENGTH = 0.7;
+        const SCATTER_FORCE = 6;
+        const BLACK_HOLE_RADIUS = 70;
+        
+        // 鼠标事件处理
+        canvas.addEventListener('mousedown', (e) => {
+            isBlackHoleActive = true;
+            blackHoleX = e.clientX;
+            blackHoleY = e.clientY;
+            blackHoleStrength = 0;
+            statusElement.textContent = "状态: 黑洞激活中";
+            
+            // 创建视觉黑洞效果
+            createBlackHoleEffect(blackHoleX, blackHoleY);
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+            isBlackHoleActive = false;
+            blackHoleStrength = 0;
+            statusElement.textContent = "状态: 粒子散射中";
+            
+            // 应用散射力
+            for (const particle of particles) {
+                const dx = particle.x - blackHoleX;
+                const dy = particle.y - blackHoleY;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < BLACK_HOLE_RADIUS * 2.5) {
+                    const angle = Math.atan2(dy, dx);
+                    const force = (1 - Math.min(distance, BLACK_HOLE_RADIUS * 2.5) / (BLACK_HOLE_RADIUS * 2.5)) * SCATTER_FORCE;
+                    particle.vx += Math.cos(angle) * force;
+                    particle.vy += Math.sin(angle) * force;
+                }
+            }
+            
+            // 移除黑洞效果
+            removeBlackHoleEffect();
+            
+            // 2秒后恢复自由状态
+            setTimeout(() => {
+                if (!isBlackHoleActive) {
+                    statusElement.textContent = "状态: 自由状态";
+                }
+            }, 2000);
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+            if (isBlackHoleActive) {
+                blackHoleX = e.clientX;
+                blackHoleY = e.clientY;
+                
+                // 更新黑洞效果位置
+                updateBlackHoleEffect(blackHoleX, blackHoleY);
+            }
+        });
+        
+        // 黑洞视觉效果
+        let blackHoleElement = null;
+        
+        function createBlackHoleEffect(x, y) {
+            blackHoleElement = document.createElement('div');
+            blackHoleElement.className = 'vortex-effect';
+            blackHoleElement.style.width = `${BLACK_HOLE_RADIUS * 2}px`;
+            blackHoleElement.style.height = `${BLACK_HOLE_RADIUS * 2}px`;
+            blackHoleElement.style.left = `${x}px`;
+            blackHoleElement.style.top = `${y}px`;
+            document.body.appendChild(blackHoleElement);
+        }
+        
+        function updateBlackHoleEffect(x, y) {
+            if (blackHoleElement) {
+                blackHoleElement.style.left = `${x}px`;
+                blackHoleElement.style.top = `${y}px`;
+            }
+        }
+        
+        function removeBlackHoleEffect() {
+            if (blackHoleElement) {
+                blackHoleElement.style.transition = 'all 0.5s ease';
+                blackHoleElement.style.opacity = '0';
+                blackHoleElement.style.transform = 'translate(-50%, -50%) scale(1.5)';
+                
+                setTimeout(() => {
+                    if (blackHoleElement && blackHoleElement.parentNode) {
+                        document.body.removeChild(blackHoleElement);
+                        blackHoleElement = null;
+                    }
+                }, 500);
+            }
+        }
+        
+        // 重置功能
+        resetBtn.addEventListener('click', () => {
+            // 重置所有粒子
+            for (const particle of particles) {
+                particle.reset();
+            }
+            
+            // 如果有黑洞效果，移除它
+            if (isBlackHoleActive) {
+                isBlackHoleActive = false;
+                blackHoleStrength = 0;
+                removeBlackHoleEffect();
+            }
+            
+            statusElement.textContent = "状态: 粒子已重置";
+            setTimeout(() => {
+                statusElement.textContent = "状态: 自由状态";
+            }, 1500);
+        });
+        
+        // 动画循环
+        let lastTime = 0;
+        const targetFPS = 60;
+        const frameInterval = 1000 / targetFPS;
+        
+        function animate(currentTime) {
+            // 控制帧率以提高性能
+            if (currentTime - lastTime < frameInterval) {
+                requestAnimationFrame(animate);
+                return;
+            }
+            lastTime = currentTime;
+            
+            // 清除画布（带有淡出效果）
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 逐渐增加黑洞强度
+            if (isBlackHoleActive && blackHoleStrength < BLACK_HOLE_MAX_STRENGTH) {
+                blackHoleStrength += 0.02;
+            }
+            
+            // 更新和绘制粒子
+            for (const particle of particles) {
+                // 如果黑洞激活，应用引力
+                if (isBlackHoleActive) {
+                    const dx = blackHoleX - particle.x;
+                    const dy = blackHoleY - particle.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // 只有在一定距离内才应用引力
+                    if (distance < BLACK_HOLE_RADIUS * 4) {
+                        const angle = Math.atan2(dy, dx);
+                        const force = blackHoleStrength * (1 - distance / (BLACK_HOLE_RADIUS * 4));
+                        particle.vx += Math.cos(angle) * force;
+                        particle.vy += Math.sin(angle) * force;
+                    }
+                }
+                
+                // 添加轻微的随机扰动，使粒子运动更自然
+                particle.vx += (Math.random() - 0.5) * 0.03;
+                particle.vy += (Math.random() - 0.5) * 0.03;
+                
+                // 限制最大速度
+                const speed = Math.sqrt(particle.vx * particle.vx + particle.vy * particle.vy);
+                if (speed > 3) {
+                    particle.vx = (particle.vx / speed) * 3;
+                    particle.vy = (particle.vy / speed) * 3;
+                }
+                
+                // 更新粒子位置
+                particle.update();
+                
+                // 绘制粒子
+                particle.draw();
+            }
+            
+            // 继续动画循环
+            requestAnimationFrame(animate);
+        }
+        
+        // 启动动画
+        animate();
+    </script>
+</body>
+</html>

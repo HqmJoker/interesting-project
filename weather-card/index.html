@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Animated Weather Cards</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 10% 20%, rgba(255, 255, 255, 0.05) 0%, transparent 20%),
+                radial-gradient(circle at 90% 80%, rgba(255, 255, 255, 0.03) 0%, transparent 20%);
+            pointer-events: none;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(45deg, #4facfe 0%, #00f2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(79, 172, 254, 0.3);
+            margin-bottom: 10px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 40px;
+        }
+
+        .filter-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(45deg, #4facfe, #00f2fe);
+            box-shadow: 0 5px 15px rgba(0, 242, 254, 0.4);
+        }
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            padding: 20px 0;
+        }
+
+        .weather-card {
+            background: rgba(30, 30, 46, 0.8);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: all 0.5s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .weather-card.hidden {
+            opacity: 0;
+            transform: scale(0.8);
+            height: 0;
+            padding: 0;
+            margin: 0;
+            border: none;
+        }
+
+        .weather-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+            transform: rotate(45deg);
+            transition: all 0.5s ease;
+        }
+
+        .weather-card:hover::before {
+            transform: rotate(45deg) translate(20%, 20%);
+        }
+
+        .weather-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+        }
+
+        .weather-type {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .weather-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+
+        /* Sunny Card Styles */
+        .sunny-card {
+            background: linear-gradient(135deg, #ff9a9e 0%, #fad0c4 100%);
+        }
+
+        .sunny-icon {
+            width: 100px;
+            height: 100px;
+            background: #FFD700;
+            border-radius: 50%;
+            margin: 0 auto;
+            box-shadow: 0 0 40px #FFA500, 0 0 80px #FF8C00;
+            animation: pulse 2s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 40px #FFA500, 0 0 80px #FF8C00; }
+            50% { transform: scale(1.1); box-shadow: 0 0 60px #FFA500, 0 0 100px #FF8C00; }
+            100% { transform: scale(1); box-shadow: 0 0 40px #FFA500, 0 0 80px #FF8C00; }
+        }
+
+        /* Rainy Card Styles */
+        .rainy-card {
+            background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+        }
+
+        .rainy-icon {
+            position: relative;
+        }
+
+        .rainy-cloud {
+            width: 80px;
+            height: 40px;
+            background: #696969;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .rainy-cloud::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 10px;
+            width: 50px;
+            height: 50px;
+            background: #696969;
+            border-radius: 50%;
+        }
+
+        .rainy-cloud::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: #696969;
+            border-radius: 50%;
+        }
+
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 15px;
+            background: #1E90FF;
+            border-radius: 0 0 5px 5px;
+            animation: rainFall linear infinite;
+        }
+
+        @keyframes rainFall {
+            to { transform: translateY(120px); }
+        }
+
+        /* Snowy Card Styles */
+        .snowy-card {
+            background: linear-gradient(135deg, #e6dada 0%, #274046 100%);
+        }
+
+        .snowy-icon {
+            position: relative;
+        }
+
+        .snowy-cloud {
+            width: 80px;
+            height: 40px;
+            background: #808080;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .snowy-cloud::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 10px;
+            width: 50px;
+            height: 50px;
+            background: #808080;
+            border-radius: 50%;
+        }
+
+        .snowy-cloud::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: #808080;
+            border-radius: 50%;
+        }
+
+        .snow-flake {
+            position: absolute;
+            color: white;
+            font-size: 20px;
+            animation: snowFall linear infinite;
+        }
+
+        @keyframes snowFall {
+            to { transform: translateY(120px); }
+        }
+
+        /* Windy Card Styles */
+        .windy-card {
+            background: linear-gradient(135deg, #c2e59c 0%, #64b3f4 100%);
+        }
+
+        .windy-icon {
+            position: relative;
+        }
+
+        .windy-cloud {
+            width: 80px;
+            height: 40px;
+            background: #A9A9A9;
+            border-radius: 50%;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .windy-cloud::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 10px;
+            width: 50px;
+            height: 50px;
+            background: #A9A9A9;
+            border-radius: 50%;
+        }
+
+        .windy-cloud::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            right: 10px;
+            width: 40px;
+            height: 40px;
+            background: #A9A9A9;
+            border-radius: 50%;
+        }
+
+        .wind-line {
+            position: absolute;
+            height: 2px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 2px;
+            animation: windMove ease-in-out infinite;
+        }
+
+        @keyframes windMove {
+            0% { transform: translateX(-100px); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateX(200px); opacity: 0; }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .filter-buttons {
+                gap: 10px;
+            }
+            
+            .filter-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .cards-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .weather-card {
+                padding: 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.8rem;
+            }
+            
+            .filter-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .filter-btn {
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Animated Weather Cards</h1>
+        </header>
+        
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="all">Show All</button>
+            <button class="filter-btn" data-filter="sunny">Sun Only</button>
+            <button class="filter-btn" data-filter="rainy">Rain Only</button>
+            <button class="filter-btn" data-filter="snowy">Snow Only</button>
+            <button class="filter-btn" data-filter="windy">Wind Only</button>
+        </div>
+        
+        <div class="cards-container">
+            <!-- Sunny Card -->
+            <div class="weather-card sunny-card" data-weather="sunny">
+                <h2 class="weather-type">Sunny</h2>
+                <div class="weather-icon">
+                    <div class="sunny-icon"></div>
+                </div>
+            </div>
+            
+            <!-- Rainy Card -->
+            <div class="weather-card rainy-card" data-weather="rainy">
+                <h2 class="weather-type">Rainy</h2>
+                <div class="weather-icon rainy-icon">
+                    <div class="rainy-cloud"></div>
+                </div>
+            </div>
+            
+            <!-- Snowy Card -->
+            <div class="weather-card snowy-card" data-weather="snowy">
+                <h2 class="weather-type">Snowy</h2>
+                <div class="weather-icon snowy-icon">
+                    <div class="snowy-cloud"></div>
+                </div>
+            </div>
+            
+            <!-- Windy Card -->
+            <div class="weather-card windy-card" data-weather="windy">
+                <h2 class="weather-type">Windy</h2>
+                <div class="weather-icon windy-icon">
+                    <div class="windy-cloud"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Filter buttons functionality
+            const filterButtons = document.querySelectorAll('.filter-btn');
+            const weatherCards = document.querySelectorAll('.weather-card');
+            
+            filterButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Update active button
+                    filterButtons.forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const filter = this.getAttribute('data-filter');
+                    
+                    // Filter cards
+                    weatherCards.forEach(card => {
+                        if (filter === 'all' || card.getAttribute('data-weather') === filter) {
+                            card.classList.remove('hidden');
+                        } else {
+                            card.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+            
+            // Create rain drops for rainy cards
+            function createRainDrops() {
+                const rainyCards = document.querySelectorAll('.rainy-card');
+                rainyCards.forEach(card => {
+                    const icon = card.querySelector('.rainy-icon');
+                    for (let i = 0; i < 20; i++) {
+                        const drop = document.createElement('div');
+                        drop.className = 'rain-drop';
+                        drop.style.left = Math.random() * 100 + '%';
+                        drop.style.animationDuration = (Math.random() * 1 + 0.5) + 's';
+                        drop.style.animationDelay = Math.random() * 2 + 's';
+                        icon.appendChild(drop);
+                    }
+                });
+            }
+            
+            // Create snow flakes for snowy cards
+            function createSnowFlakes() {
+                const snowyCards = document.querySelectorAll('.snowy-card');
+                snowyCards.forEach(card => {
+                    const icon = card.querySelector('.snowy-icon');
+                    for (let i = 0; i < 20; i++) {
+                        const flake = document.createElement('div');
+                        flake.className = 'snow-flake';
+                        flake.innerHTML = '❄';
+                        flake.style.left = Math.random() * 100 + '%';
+                        flake.style.fontSize = (Math.random() * 10 + 10) + 'px';
+                        flake.style.animationDuration = (Math.random() * 3 + 2) + 's';
+                        flake.style.animationDelay = Math.random() * 5 + 's';
+                        icon.appendChild(flake);
+                    }
+                });
+            }
+            
+            // Create wind lines for windy cards
+            function createWindLines() {
+                const windyCards = document.querySelectorAll('.windy-card');
+                windyCards.forEach(card => {
+                    const icon = card.querySelector('.windy-icon');
+                    for (let i = 0; i < 8; i++) {
+                        const line = document.createElement('div');
+                        line.className = 'wind-line';
+                        line.style.top = (i * 15 + 10) + 'px';
+                        line.style.width = (Math.random() * 50 + 30) + 'px';
+                        line.style.animationDuration = (Math.random() * 2 + 1) + 's';
+                        line.style.animationDelay = (Math.random() * 1) + 's';
+                        icon.appendChild(line);
+                    }
+                });
+            }
+            
+            // Initialize animations
+            createRainDrops();
+            createSnowFlakes();
+            createWindLines();
+            
+            // Add hover effects to cards
+            const cards = document.querySelectorAll('.weather-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-10px)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
