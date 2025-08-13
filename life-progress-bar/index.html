@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>人生进度条 | Life Progress</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="container header">
+    <h1>人生进度条</h1>
+    <button id="themeToggle" class="theme-toggle" aria-label="切换主题">切换为亮色</button>
+  </header>
+
+  <main class="container">
+    <!-- 第一部分：当下 -->
+    <section class="card" id="section-now">
+      <h2>当下</h2>
+      <div class="now-grid">
+        <div class="now-time">
+          <div class="now-line">
+            <span class="label">当前时间</span>
+            <span id="currentTime" class="value mono"></span>
+          </div>
+          <div class="now-line">
+            <span class="label">今日剩余</span>
+            <span id="remainingToday" class="value mono"></span>
+          </div>
+        </div>
+        <div class="progress-list">
+          <div class="progress-item">
+            <div class="progress-header"><span>今日</span><span id="dayPct" class="mono small"></span></div>
+            <div class="progress"><div id="barDay" class="bar"></div></div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-header"><span>本周</span><span id="weekPct" class="mono small"></span></div>
+            <div class="progress"><div id="barWeek" class="bar"></div></div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-header"><span>本月</span><span id="monthPct" class="mono small"></span></div>
+            <div class="progress"><div id="barMonth" class="bar"></div></div>
+          </div>
+          <div class="progress-item">
+            <div class="progress-header"><span>本年</span><span id="yearPct" class="mono small"></span></div>
+            <div class="progress"><div id="barYear" class="bar"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第二部分：填写参数 -->
+    <section class="card" id="section-inputs">
+      <h2>你的设定</h2>
+      <form id="settingsForm" class="form-grid">
+        <div class="form-field">
+          <label for="birthDate">出生日期</label>
+          <input type="date" id="birthDate" name="birthDate" value="2000-01-01" />
+        </div>
+        <div class="form-field">
+          <label for="expectancy">预期寿命（岁）</label>
+          <input type="number" id="expectancy" name="expectancy" value="80" min="1" max="150" />
+        </div>
+
+        <details class="advanced">
+          <summary>高级设置</summary>
+          <div class="advanced-grid">
+            <div class="form-field">
+              <label for="gradAge">毕业/开始工作年龄</label>
+              <input type="number" id="gradAge" name="gradAge" value="22" min="10" max="60" />
+            </div>
+            <div class="form-field">
+              <label for="retireAge">退休年龄</label>
+              <input type="number" id="retireAge" name="retireAge" value="60" min="30" max="120" />
+            </div>
+            <div class="form-field">
+              <label for="childAge">孩子出生年龄</label>
+              <input type="number" id="childAge" name="childAge" value="28" min="15" max="70" />
+            </div>
+            <div class="form-field">
+              <label for="childYears">陪伴孩子（年）</label>
+              <input type="number" id="childYears" name="childYears" value="18" min="0" max="30" />
+            </div>
+            <div class="form-field">
+              <label for="sleepHours">睡眠（小时/天）</label>
+              <input type="number" id="sleepHours" name="sleepHours" value="8" min="0" max="24" step="0.5" />
+            </div>
+            <div class="form-field">
+              <label for="workHours">工作/学习（小时/天）</label>
+              <input type="number" id="workHours" name="workHours" value="8" min="0" max="24" step="0.5" />
+            </div>
+            <div class="form-field">
+              <label for="kidHours">陪伴孩子（小时/天）</label>
+              <input type="number" id="kidHours" name="kidHours" value="2" min="0" max="24" step="0.5" />
+            </div>
+          </div>
+        </details>
+
+        <div class="form-actions">
+          <button type="button" id="applyBtn">应用设置</button>
+          <button type="button" id="resetBtn" class="secondary">重置默认</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 第三部分：统计信息 -->
+    <section class="card" id="section-stats">
+      <h2>统计信息</h2>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-label">已度过</div>
+          <div class="stat-value mono" id="daysLived">-</div>
+          <div class="stat-sub">天</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">预计剩余</div>
+          <div class="stat-value mono" id="daysLeft">-</div>
+          <div class="stat-sub">天</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">人生进度</div>
+          <div class="stat-value mono" id="lifePct">-</div>
+          <div class="stat-sub">%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第四部分：人生网格图 -->
+    <section class="card" id="section-grid">
+      <h2>人生网格图（每格代表一周）</h2>
+      <div class="legend" id="legend">
+        <span><i class="chip past"></i> 已过去</span>
+        <span><i class="chip future"></i> 未来</span>
+        <span><i class="chip work"></i> 工作期</span>
+        <span><i class="chip kid"></i> 陪伴孩子期</span>
+        <span><i class="chip retired"></i> 退休期</span>
+        <span><i class="chip mark child"></i> 孩子出生</span>
+        <span><i class="chip mark grad"></i> 毕业/工作</span>
+        <span><i class="chip mark retire"></i> 退休</span>
+      </div>
+      <div id="lifeGrid" class="life-grid" aria-label="人生周网格"></div>
+    </section>
+
+    <!-- 时间分配 -->
+    <section class="card" id="section-allocation">
+      <h2>时间分配（全人生/剩余）</h2>
+      <div class="alloc-wrap">
+        <div class="alloc">
+          <div class="alloc-bars">
+            <div class="alloc-bar" id="allocTotalSleep" title="睡觉"></div>
+            <div class="alloc-bar" id="allocTotalWork" title="工作/学习"></div>
+            <div class="alloc-bar" id="allocTotalKid" title="陪伴孩子"></div>
+            <div class="alloc-bar free" id="allocTotalFree" title="其他自由时间"></div>
+          </div>
+          <div class="alloc-legend" id="allocTotalLegend"></div>
+        </div>
+        <div class="alloc">
+          <div class="alloc-bars">
+            <div class="alloc-bar" id="allocRemainSleep" title="睡觉"></div>
+            <div class="alloc-bar" id="allocRemainWork" title="工作/学习"></div>
+            <div class="alloc-bar" id="allocRemainKid" title="陪伴孩子"></div>
+            <div class="alloc-bar free" id="allocRemainFree" title="其他自由时间"></div>
+          </div>
+          <div class="alloc-legend" id="allocRemainLegend"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 第六部分：总结 -->
+    <section class="card" id="section-summary">
+      <h2>一句话提醒</h2>
+      <p id="summaryText" class="summary"></p>
+    </section>
+  </main>
+
+  <footer class="container footer">
+    <p>© <span id="yearNow"></span> · 做时间的朋友</p>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html> 
